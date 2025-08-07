@@ -74,7 +74,16 @@ public class WebsocketConnection implements AutoCloseable {
 
 	public void establish() {
 		String accessToken = null;
-		ClientManager container = ClientManager.createClient();
+		log.debug("Establish called.");
+
+		ClientManager container;
+		try {
+			container = ClientManager.createClient();
+			log.info("ClientManager created");
+		} catch (Exception e) {
+			log.error("Failed to create ClientManager: {}", e.getMessage(), e);
+			return;
+		}
 		endpoints = new WebsocketEndpoints(this);
 		Builder c = ClientEndpointConfig.Builder.create();
 
