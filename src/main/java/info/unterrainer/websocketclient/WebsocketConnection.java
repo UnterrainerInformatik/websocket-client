@@ -11,6 +11,9 @@ import org.glassfish.tyrus.client.ClientManager;
 
 import info.unterrainer.oauthtokenmanager.LocalOauthTokens;
 import info.unterrainer.oauthtokenmanager.OauthTokenManager;
+import info.unterrainer.websocketclient.exceptions.WebsocketClosingException;
+import info.unterrainer.websocketclient.exceptions.WebsocketConnectingException;
+import info.unterrainer.websocketclient.exceptions.WebsocketSendingMessageException;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ClientEndpointConfig.Builder;
 import jakarta.websocket.CloseReason;
@@ -57,7 +60,7 @@ public class WebsocketConnection implements AutoCloseable {
 			s.getBasicRemote().sendText(message);
 		} catch (Exception e) {
 			log.error("Error sending message: ", e);
-			throw new SendingMessageWebsocketException(String.format("Failed to send message [%s].", message), e);
+			throw new WebsocketSendingMessageException(String.format("Failed to send message [%s].", message), e);
 		}
 		log.debug("Sent message: " + message);
 	}
@@ -69,6 +72,7 @@ public class WebsocketConnection implements AutoCloseable {
 			s.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Normal closure"));
 		} catch (IOException e) {
 			log.error("Error closing session.", e);
+			throw new WebsocketClosingException("Failed to close WebSocket session.", e);
 		}
 	}
 
@@ -82,7 +86,7 @@ public class WebsocketConnection implements AutoCloseable {
 			log.info("ClientManager created");
 		} catch (Exception e) {
 			log.error("Failed to create ClientManager: {}", e.getMessage(), e);
-			return;
+			throw new WebsocketConnectingException("Failed to create WebSocket ClientManager.", e);
 		}
 		endpoints = new WebsocketEndpoints(this);
 		Builder c = ClientEndpointConfig.Builder.create();
@@ -107,7 +111,7 @@ public class WebsocketConnection implements AutoCloseable {
 			container.connectToServer(endpoints, config, URI.create(host));
 		} catch (Exception e) {
 			log.error("Error connecting to WebSocket server: ", e);
-			return;
+			throw new WebsocketConnectingException("Failed to connect to WebSocket server at " + host, e);
 		}
 		log.info("WebSocket client connected to: {}", host);
 	}
