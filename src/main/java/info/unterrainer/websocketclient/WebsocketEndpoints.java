@@ -1,5 +1,7 @@
 package info.unterrainer.websocketclient;
 
+import java.time.Duration;
+
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
@@ -32,7 +34,7 @@ public class WebsocketEndpoints extends Endpoint {
 		// onMessage-Handler
 		session.addMessageHandler(String.class, message -> {
 			log.debug("Received message: " + message);
-			client.awaitOpen();
+			client.awaitOpen(Duration.ofMillis(5000L));
 			if (client.onMessageHandler != null) {
 				try {
 					client.onMessageHandler.accept(message);
@@ -45,7 +47,7 @@ public class WebsocketEndpoints extends Endpoint {
 
 	@Override
 	public void onClose(Session session, CloseReason closeReason) {
-		Session s = client.awaitOpen();
+		Session s = client.awaitOpen(Duration.ofMillis(5000L));
 		log.info("Disconnected from server: {}", closeReason);
 		if (client.onCloseHandler != null) {
 			try {
@@ -64,7 +66,7 @@ public class WebsocketEndpoints extends Endpoint {
 
 	@Override
 	public void onError(Session session, Throwable throwable) {
-		client.awaitOpen();
+		client.awaitOpen(Duration.ofMillis(5000L));
 		log.error("Error occurred: ", throwable);
 		if (client.onErrorHandler != null) {
 			try {

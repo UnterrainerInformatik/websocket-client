@@ -2,9 +2,11 @@ package info.unterrainer.websocketclient;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.glassfish.tyrus.client.ClientManager;
@@ -46,16 +48,20 @@ public class WebsocketConnection implements AutoCloseable {
 
 	final CompletableFuture<Session> sessionReady = new CompletableFuture<>();
 
-	public Session awaitOpen() {
+	public Session awaitOpen(Duration timeoutInMillis) {
 		try {
-			return sessionReady.get();
+			if (timeoutInMillis == null) {
+				// Blocks indefinitely until the session is ready.
+				return sessionReady.get();
+			}
+			return sessionReady.get(timeoutInMillis.toMillis(), TimeUnit.MILLISECONDS);
 		} catch (Exception e) {
 			throw new IllegalStateException("WebSocket did not open in time.", e);
 		}
 	}
 
 	public void send(String message) {
-		Session s = awaitOpen();
+		Session s = awaitOpen(Duration.ofMillis(5000L));
 		try {
 			s.getBasicRemote().sendText(message);
 		} catch (Exception e) {
@@ -67,7 +73,7 @@ public class WebsocketConnection implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Session s = awaitOpen();
+		Session s = awaitOpen(Duration.ofMillis(5000L));
 		try {
 			s.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Normal closure"));
 		} catch (IOException e) {
