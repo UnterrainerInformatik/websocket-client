@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 
 import org.glassfish.tyrus.client.ClientManager;
 
+import info.unterrainer.commons.serialization.jsonmapper.JsonMapper;
 import info.unterrainer.oauthtokenmanager.LocalOauthTokens;
 import info.unterrainer.oauthtokenmanager.OauthTokenManager;
 import info.unterrainer.websocketclient.exceptions.WebsocketClosingException;
@@ -45,6 +46,7 @@ public class WebsocketConnection implements AutoCloseable {
 	final String keycloakPassword;
 
 	private WebsocketEndpoints endpoints;
+	private JsonMapper jsonMapper = JsonMapper.create();
 
 	final CompletableFuture<Session> sessionReady = new CompletableFuture<>();
 
@@ -64,6 +66,28 @@ public class WebsocketConnection implements AutoCloseable {
 		Session s = awaitOpen(Duration.ofMillis(5000L));
 		try {
 			s.getBasicRemote().sendText(message);
+		} catch (Exception e) {
+			log.error("Error sending message: ", e);
+			throw new WebsocketSendingMessageException(String.format("Failed to send message [%s].", message), e);
+		}
+		log.debug("Sent message: " + message);
+	}
+
+	public void send(byte[] message) {
+		Session s = awaitOpen(Duration.ofMillis(5000L));
+		try {
+			s.getBasicRemote().sendBinary(java.nio.ByteBuffer.wrap(message));
+		} catch (Exception e) {
+			log.error("Error sending binary message: ", e);
+			throw new WebsocketSendingMessageException("Failed to send binary message.", e);
+		}
+		log.debug("Sent binary message of length: " + message.length);
+	}
+
+	public void <T> send(T message) {
+		Session s = awaitOpen(Duration.ofMillis(5000L));
+		try {
+			s.getBasicRemote().sendText(jsonMapper.toStringFrom(message));
 		} catch (Exception e) {
 			log.error("Error sending message: ", e);
 			throw new WebsocketSendingMessageException(String.format("Failed to send message [%s].", message), e);
