@@ -35,20 +35,22 @@ import lombok.extern.slf4j.Slf4j;
 public class WebsocketConnection implements AutoCloseable {
 
 	private final String host;
-	final Consumer<Session> onOpenHandler;
-	final Consumer<String> onMessageHandler;
-	final Consumer<Session> onCloseHandler;
-	final Consumer<Throwable> onErrorHandler;
-	final String keycloakHost;
-	final String keycloakClient;
-	final String keycloakClientSecret;
-	final String keycloakUser;
-	final String keycloakPassword;
+	private final Consumer<Session> onOpenHandler;
+	private final Consumer<String> onMessageHandler;
+	private final Consumer<Session> onCloseHandler;
+	private final Consumer<Throwable> onErrorHandler;
+	private final String keycloakHost;
+	private final String keycloakClient;
+	private final String keycloakClientSecret;
+	private final String keycloakUser;
+	private final String keycloakPassword;
 
 	private WebsocketEndpoints endpoints;
-	private JsonMapper jsonMapper = JsonMapper.create();
 
-	final CompletableFuture<Session> sessionReady = new CompletableFuture<>();
+	@lombok.Builder.Default
+	private CompletableFuture<Session> sessionReady = new CompletableFuture<>();
+	@lombok.Builder.Default
+	private JsonMapper jsonMapper = JsonMapper.create();
 
 	public Session awaitOpen(Duration timeoutInMillis) {
 		try {
@@ -84,7 +86,7 @@ public class WebsocketConnection implements AutoCloseable {
 		log.debug("Sent binary message of length: " + message.length);
 	}
 
-	public void <T> send(T message) {
+	public <T> void send(T message) {
 		Session s = awaitOpen(Duration.ofMillis(5000L));
 		try {
 			s.getBasicRemote().sendText(jsonMapper.toStringFrom(message));
