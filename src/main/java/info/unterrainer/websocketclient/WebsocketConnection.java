@@ -2,6 +2,7 @@ package info.unterrainer.websocketclient;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,20 @@ public class WebsocketConnection implements AutoCloseable {
 		} catch (Exception e) {
 			throw new IllegalStateException("WebSocket did not open in time.", e);
 		}
+	}
+
+	/**
+	 * Sends a ping message to the server to keep the connection alive.
+	 */
+	public void sendPing() {
+		Session s = awaitOpen(Duration.ofMillis(5000L));
+		try {
+			s.getBasicRemote().sendPing(ByteBuffer.allocate(1));
+		} catch (Exception e) {
+			log.error("Error sending ping: ", e);
+			throw new WebsocketSendingMessageException(String.format("Failed to send ping."), e);
+		}
+		log.debug("Sent ping");
 	}
 
 	public void send(String message) {

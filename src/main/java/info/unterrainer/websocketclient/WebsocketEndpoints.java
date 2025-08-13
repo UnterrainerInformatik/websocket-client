@@ -20,6 +20,7 @@ public class WebsocketEndpoints extends Endpoint {
 	@Override
 	public void onOpen(Session session, EndpointConfig config) {
 		client.sessionReady().complete(session);
+		session.setMaxIdleTimeout(0L);
 		log.info("Connected to server");
 		if (client.onOpenHandler() != null) {
 			try {
