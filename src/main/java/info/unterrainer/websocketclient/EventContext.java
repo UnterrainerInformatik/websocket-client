@@ -17,7 +17,8 @@ public class EventContext {
 	private final JsonMapper jsonMapper;
 
 	private String message;
-	private Byte[] binaryMessage;
+	@lombok.Builder.Default
+	private byte[] binaryMessage = new byte[0];
 	private Throwable error;
 
 	public <T> T message(Class<T> type) {

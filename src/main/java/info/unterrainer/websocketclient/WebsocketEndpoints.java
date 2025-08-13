@@ -48,7 +48,7 @@ public class WebsocketEndpoints extends Endpoint {
 			}
 		});
 
-		session.addMessageHandler(Byte[].class, message -> {
+		session.addMessageHandler(byte[].class, message -> {
 			log.debug("Received binary-message: " + message);
 			client.awaitOpen(Duration.ofMillis(5000L));
 			if (client.onBinaryMessageHandler() != null) {
