@@ -21,11 +21,10 @@ public class WebsocketEndpoints extends Endpoint {
 	public void onOpen(Session session, EndpointConfig config) {
 		client.sessionReady().complete(session);
 		log.info("Connected to server");
-
-		// onOpen-Handler
 		if (client.onOpenHandler() != null) {
 			try {
-				client.onOpenHandler().accept(session);
+				client.onOpenHandler()
+						.accept(EventContext.builder().session(session).jsonMapper(client.jsonMapper()).build());
 			} catch (Exception e) {
 				log.error("Error executing onOpen handler: ", e);
 			}
@@ -37,7 +36,29 @@ public class WebsocketEndpoints extends Endpoint {
 			client.awaitOpen(Duration.ofMillis(5000L));
 			if (client.onMessageHandler() != null) {
 				try {
-					client.onMessageHandler().accept(message);
+					client.onMessageHandler()
+							.accept(EventContext.builder()
+									.session(session)
+									.jsonMapper(client.jsonMapper())
+									.message(message)
+									.build());
+				} catch (Exception e) {
+					log.error("Error executing onMessage handler: ", e);
+				}
+			}
+		});
+
+		session.addMessageHandler(Byte[].class, message -> {
+			log.debug("Received binary-message: " + message);
+			client.awaitOpen(Duration.ofMillis(5000L));
+			if (client.onBinaryMessageHandler() != null) {
+				try {
+					client.onBinaryMessageHandler()
+							.accept(EventContext.builder()
+									.session(session)
+									.jsonMapper(client.jsonMapper())
+									.binaryMessage(message)
+									.build());
 				} catch (Exception e) {
 					log.error("Error executing onMessage handler: ", e);
 				}
@@ -51,7 +72,8 @@ public class WebsocketEndpoints extends Endpoint {
 		log.info("Disconnected from server: {}", closeReason);
 		if (client.onCloseHandler() != null) {
 			try {
-				client.onCloseHandler().accept(s);
+				client.onCloseHandler()
+						.accept(EventContext.builder().session(session).jsonMapper(client.jsonMapper()).build());
 			} catch (Exception e) {
 				log.error("Error executing onClose handler: ", e);
 			}
@@ -70,7 +92,12 @@ public class WebsocketEndpoints extends Endpoint {
 		log.error("Error occurred: ", throwable);
 		if (client.onErrorHandler() != null) {
 			try {
-				client.onErrorHandler().accept(throwable);
+				client.onErrorHandler()
+						.accept(EventContext.builder()
+								.session(session)
+								.jsonMapper(client.jsonMapper())
+								.error(throwable)
+								.build());
 			} catch (Exception e) {
 				log.error("Error executing onError handler: ", e);
 			}

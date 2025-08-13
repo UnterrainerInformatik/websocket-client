@@ -39,10 +39,11 @@ public class WebsocketConnection implements AutoCloseable {
 
 	@Getter
 	private final String host;
-	private final Consumer<Session> onOpenHandler;
-	private final Consumer<String> onMessageHandler;
-	private final Consumer<Session> onCloseHandler;
-	private final Consumer<Throwable> onErrorHandler;
+	private final Consumer<EventContext> onOpenHandler;
+	private final Consumer<EventContext> onMessageHandler;
+	private final Consumer<EventContext> onBinaryMessageHandler;
+	private final Consumer<EventContext> onCloseHandler;
+	private final Consumer<EventContext> onErrorHandler;
 	private final String keycloakHost;
 	private final String keycloakClient;
 	private final String keycloakClientSecret;
