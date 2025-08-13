@@ -23,7 +23,9 @@ import jakarta.websocket.CloseReason;
 import jakarta.websocket.Session;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,9 +33,11 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @RequiredArgsConstructor
 @SuperBuilder(toBuilder = true)
+@Accessors(fluent = true)
 @EqualsAndHashCode()
 public class WebsocketConnection implements AutoCloseable {
 
+	@Getter
 	private final String host;
 	private final Consumer<Session> onOpenHandler;
 	private final Consumer<String> onMessageHandler;
