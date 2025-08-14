@@ -37,6 +37,8 @@ public class WebsocketConnection implements AutoCloseable {
 
 	@Getter
 	private final String host;
+	@lombok.Builder.Default
+	private final String name = "";
 	private final Consumer<EventContext> onOpenHandler;
 	private final Consumer<EventContext> onMessageHandler;
 	private final Consumer<EventContext> onBinaryMessageHandler;
@@ -63,7 +65,7 @@ public class WebsocketConnection implements AutoCloseable {
 			}
 			return sessionReady.get(timeoutInMillis.toMillis(), TimeUnit.MILLISECONDS);
 		} catch (Exception e) {
-			throw new IllegalStateException("WebSocket did not open in time.", e);
+			throw new IllegalStateException("(" + name + ") WebSocket did not open in time.", e);
 		}
 	}
 
@@ -75,10 +77,10 @@ public class WebsocketConnection implements AutoCloseable {
 		try {
 			s.getBasicRemote().sendPing(ByteBuffer.allocate(1));
 		} catch (Exception e) {
-			log.error("Error sending ping: ", e);
-			throw new WebsocketSendingMessageException(String.format("Failed to send ping."), e);
+			log.error("(" + name + ") Error sending ping: ", e);
+			throw new WebsocketSendingMessageException(String.format("(" + name + ") Failed to send ping."), e);
 		}
-		log.debug("Sent ping");
+		log.debug("(" + name + ") Sent ping");
 	}
 
 	public void send(String message) {
@@ -86,10 +88,11 @@ public class WebsocketConnection implements AutoCloseable {
 		try {
 			s.getBasicRemote().sendText(message);
 		} catch (Exception e) {
-			log.error("Error sending message: ", e);
-			throw new WebsocketSendingMessageException(String.format("Failed to send message [%s].", message), e);
+			log.error("(" + name + ") Error sending message: ", e);
+			throw new WebsocketSendingMessageException(
+					String.format("(" + name + ") Failed to send message [%s].", message), e);
 		}
-		log.debug("Sent message: " + message);
+		log.debug("(" + name + ") Sent message: " + message);
 	}
 
 	public void send(byte[] message) {
@@ -97,10 +100,10 @@ public class WebsocketConnection implements AutoCloseable {
 		try {
 			s.getBasicRemote().sendBinary(java.nio.ByteBuffer.wrap(message));
 		} catch (Exception e) {
-			log.error("Error sending binary message: ", e);
-			throw new WebsocketSendingMessageException("Failed to send binary message.", e);
+			log.error("(" + name + ") Error sending binary message: ", e);
+			throw new WebsocketSendingMessageException("(" + name + ") Failed to send binary message.", e);
 		}
-		log.debug("Sent binary message of length: " + message.length);
+		log.debug("(" + name + ") Sent binary message of length: " + message.length);
 	}
 
 	public <T> void send(T message) {
@@ -108,10 +111,11 @@ public class WebsocketConnection implements AutoCloseable {
 		try {
 			s.getBasicRemote().sendText(jsonMapper.toStringFrom(message));
 		} catch (Exception e) {
-			log.error("Error sending message: ", e);
-			throw new WebsocketSendingMessageException(String.format("Failed to send message [%s].", message), e);
+			log.error("(" + name + ") Error sending message [{}]", message, e);
+			throw new WebsocketSendingMessageException(
+					String.format("(" + name + ") Failed to send message [%s].", message), e);
 		}
-		log.debug("Sent message: " + message);
+		log.debug("(" + name + ") Sent message: " + message);
 	}
 
 	@Override
@@ -120,25 +124,25 @@ public class WebsocketConnection implements AutoCloseable {
 		try {
 			s.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Normal closure"));
 		} catch (IOException e) {
-			log.error("Error closing session.", e);
-			throw new WebsocketClosingException("Failed to close WebSocket session.", e);
+			log.error("(" + name + ") Error closing session.", e);
+			throw new WebsocketClosingException("(" + name + ") Failed to close WebSocket session.", e);
 		}
 	}
 
 	public void establish() {
 		String at = null;
 		String accessToken = null;
-		log.debug("Establish called.");
+		log.debug("(" + name + ") Establish called.");
 
 		ClientManager container;
 		try {
 			container = ClientManager.createClient();
-			log.info("ClientManager created");
+			log.info("(" + name + ") ClientManager created");
 		} catch (Exception e) {
-			log.error("Failed to create ClientManager: {}", e.getMessage(), e);
-			throw new WebsocketConnectingException("Failed to create WebSocket ClientManager.", e);
+			log.error("(" + name + ") Failed to create ClientManager: {}", e.getMessage(), e);
+			throw new WebsocketConnectingException("(" + name + ") Failed to create WebSocket ClientManager.", e);
 		}
-		endpoints = new WebsocketEndpoints(this);
+		endpoints = new WebsocketEndpoints(this, name);
 
 		if (keycloakHost != null) {
 			OauthTokenManager tokenManager = new OauthTokenManager(keycloakHost, keycloakClient);
@@ -146,6 +150,7 @@ public class WebsocketConnection implements AutoCloseable {
 					keycloakPassword);
 			accessToken = tokens.getAccessToken();
 			at = "Bearer " + accessToken;
+			log.debug("(" + name + ") Access token retrieved: {}", accessToken);
 		}
 
 		try {
@@ -153,15 +158,18 @@ public class WebsocketConnection implements AutoCloseable {
 					ClientEndpointConfig.Builder.create().configurator(new ClientEndpointConfig.Configurator() {
 					}).build(), URI.create(host));
 			if (at != null) {
+				log.debug("(" + name + ") Access token provided, sending authentication token.");
 				Session s = awaitOpen(Duration.ofMillis(5000L));
 				s.getBasicRemote().sendText(at);
+				log.debug("(" + name + ") Authentication token sent: {}", at);
 			} else {
-				log.debug("No access token provided, connecting without authentication.");
+				log.debug("(" + name + ") No access token provided, connecting without authentication.");
 			}
 		} catch (Exception e) {
-			log.error("Error connecting to WebSocket server: ", e);
-			throw new WebsocketConnectingException("Failed to connect to WebSocket server at " + host, e);
+			log.error("(" + name + ") Error connecting to WebSocket server: ", e);
+			throw new WebsocketConnectingException("(" + name + ") Failed to connect to WebSocket server at " + host,
+					e);
 		}
-		log.info("WebSocket client connected to: {}", host);
+		log.info("(" + name + ") WebSocket client connected to: {}", host);
 	}
 }
