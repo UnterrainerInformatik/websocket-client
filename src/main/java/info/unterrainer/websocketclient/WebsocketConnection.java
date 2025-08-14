@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -19,7 +17,6 @@ import info.unterrainer.websocketclient.exceptions.WebsocketClosingException;
 import info.unterrainer.websocketclient.exceptions.WebsocketConnectingException;
 import info.unterrainer.websocketclient.exceptions.WebsocketSendingMessageException;
 import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.ClientEndpointConfig.Builder;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Session;
 import lombok.Data;
@@ -129,6 +126,7 @@ public class WebsocketConnection implements AutoCloseable {
 	}
 
 	public void establish() {
+		String at = null;
 		String accessToken = null;
 		log.debug("Establish called.");
 
@@ -141,26 +139,25 @@ public class WebsocketConnection implements AutoCloseable {
 			throw new WebsocketConnectingException("Failed to create WebSocket ClientManager.", e);
 		}
 		endpoints = new WebsocketEndpoints(this);
-		Builder c = ClientEndpointConfig.Builder.create();
 
 		if (keycloakHost != null) {
 			OauthTokenManager tokenManager = new OauthTokenManager(keycloakHost, keycloakClient);
 			LocalOauthTokens tokens = tokenManager.getTokensFromCredentials(keycloakClient, keycloakUser,
 					keycloakPassword);
 			accessToken = tokens.getAccessToken();
-			String at = "Bearer " + accessToken;
-
-			c.configurator(new ClientEndpointConfig.Configurator() {
-				@Override
-				public void beforeRequest(Map<String, List<String>> headers) {
-					headers.put("Authorization", List.of(at));
-				}
-			});
+			at = "Bearer " + accessToken;
 		}
-		ClientEndpointConfig config = c.build();
 
 		try {
-			container.connectToServer(endpoints, config, URI.create(host));
+			container.connectToServer(endpoints,
+					ClientEndpointConfig.Builder.create().configurator(new ClientEndpointConfig.Configurator() {
+					}).build(), URI.create(host));
+			if (at != null) {
+				Session s = awaitOpen(Duration.ofMillis(5000L));
+				s.getBasicRemote().sendText(at);
+			} else {
+				log.debug("No access token provided, connecting without authentication.");
+			}
 		} catch (Exception e) {
 			log.error("Error connecting to WebSocket server: ", e);
 			throw new WebsocketConnectingException("Failed to connect to WebSocket server at " + host, e);
