@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>info.unterrainer.commons</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>1.0.2</version>
+		<version>1.0.3</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>websocket-client</artifactId>
-	<version>1.0.16</version>
+	<version>1.0.18</version>
 	<name>WebsocketClient</name>
 	<packaging>jar</packaging>
 
@@ -25,12 +25,12 @@
 		<dependency>
 			<groupId>info.unterrainer.commons</groupId>
 			<artifactId>oauth-token-manager</artifactId>
-			<version>1.0.11</version>
+			<version>1.0.12</version>
 		</dependency>
 		<dependency>
 			<groupId>info.unterrainer.commons</groupId>
 			<artifactId>serialization</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.tyrus.bundles</groupId>
